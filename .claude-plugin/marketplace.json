@@ -1,0 +1,15 @@
+{
+  "name": "siyuan-skills",
+  "owner": {
+    "name": "SiYuan Note Community",
+    "url": "https://b3log.org/siyuan/"
+  },
+  "plugins": [
+    {
+      "name": "siyuan",
+      "source": "./",
+      "description": "Claude Skills for 思源笔记",
+      "version": "1.0.0"
+    }
+  ]
+}

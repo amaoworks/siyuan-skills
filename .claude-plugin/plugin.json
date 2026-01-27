@@ -1,0 +1,20 @@
+{
+  "name": "siyuan",
+  "version": "1.0.0",
+  "description": "创建和编辑思源笔记兼容的文件，包括思源笔记风味 Markdown、Excalidraw 绘图等。当在思源笔记笔记本中处理 .md、.sy 或 Excalidraw 文件时使用。",
+  "author": {
+    "name": "SiYuan Note Community",
+    "url": "https://b3log.org/siyuan/"
+  },
+  "repository": "https://github.com/siyuan-note/siyuan-skills",
+  "license": "MIT",
+  "keywords": [
+    "siyuan",
+    "markdown",
+    "excalidraw",
+    "pkm",
+    "notes",
+    "知识管理",
+    "双链"
+  ]
+}
