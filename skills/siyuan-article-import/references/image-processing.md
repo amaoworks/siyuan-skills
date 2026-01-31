@@ -134,7 +134,8 @@ def upload_image_to_siyuan(image_path, config):
     """上传到思源笔记（支持本地和 WebDAV）"""
     # 优先使用本地方式
     if config.get('local_path'):
-        assets_dir = Path(config['local_path']) / 'assets'
+        # 注意：全局 assets 路径是 {local_path}/data/assets/
+        assets_dir = Path(config['local_path']) / 'data' / 'assets'
         assets_dir.mkdir(parents=True, exist_ok=True)
 
         # 生成唯一文件名
@@ -212,8 +213,30 @@ if 'blob:' in image_url:
 
 | 项目 | 说明 |
 |-----|------|
+| **资源目录位置** | 全局 assets 路径：`{local_path}/data/assets/` |
+| **图片引用语法** | `assets/filename.ext`（相对于 data 目录） |
 | **临时文件位置** | `scripts/temp_images/` 或系统临时目录 |
 | **文件命名** | 使用时间戳避免冲突：`img-20260126120000.jpg` |
 | **错误处理** | 下载/上传失败时清理临时文件 |
 | **并发处理** | 图片处理应串行执行，避免资源冲突 |
 | **超时设置** | 下载 30 秒，API 调用 60 秒 |
+
+### 目录结构说明
+
+```
+{local_path}/              # 思源工作目录
+├── data/                  # 数据目录
+│   ├── assets/           # 全局资源目录 ← 图片存放位置
+│   │   └── img-xxx.jpg
+│   └── {box_id}/         # 笔记本目录
+└── conf/                 # 配置目录
+```
+
+**配置文件中的 `local_path` 应指向思源工作目录**：
+```json
+{
+  "local_path": "Y:\\note\\siyuan",
+  "api_url": "http://127.0.0.1:6806/",
+  "api_token": "your_token"
+}
+```

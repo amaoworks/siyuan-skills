@@ -134,6 +134,58 @@ curl -X POST http://127.0.0.1:6806/api/file/getFile \
 
 ## 重要警告
 
+### 🚨 中文编码警告（非常重要！）
+
+> ⚠️ **禁止使用 curl 直接推送包含中文的内容**！
+>
+> 使用 curl 命令直接向思源笔记 API 推送中文内容会导致**乱码问题**。
+>
+> **错误示例**（会产生乱码）：
+> ```bash
+> curl -X POST "http://127.0.0.1:6806/api/filetree/createDocWithMd" \
+>   -H "Authorization: Token YOUR_TOKEN" \
+>   -H "Content-Type: application/json" \
+>   -d '{"markdown": "这是中文内容"}'
+> ```
+>
+> **正确做法**：使用编程语言（Python、JavaScript 等）调用 API，确保正确的 UTF-8 编码：
+>
+> **Python 示例**（推荐）：
+> ```python
+> import requests
+>
+> response = requests.post(
+>     'http://127.0.0.1:6806/api/filetree/createDocWithMd',
+>     headers={
+>         'Authorization': 'Token YOUR_TOKEN',
+>         'Content-Type': 'application/json'
+>     },
+>     json={
+>         'notebook': '笔记本ID',
+>         'path': '/文档路径',
+>         'markdown': '这是中文内容，编码正常'
+>     }
+> )
+> ```
+>
+> **Node.js 示例**：
+> ```javascript
+> const response = await fetch('http://127.0.0.1:6806/api/filetree/createDocWithMd', {
+>     method: 'POST',
+>     headers: {
+>         'Authorization': 'Token YOUR_TOKEN',
+>         'Content-Type': 'application/json'
+>     },
+>     body: JSON.stringify({
+>         notebook: '笔记本ID',
+>         path: '/文档路径',
+>         markdown: '这是中文内容，编码正常'
+>     })
+> });
+> ```
+
+### 文件操作警告
+
 > ⚠️ **警告**：插件或外部扩展如果需要读取或写入 `data` 目录下的文件，**请通过调用内核 API 来实现**，不要自行调用 `fs` 或其他 Node.js API，否则可能导致数据同步时分块丢失，造成云端数据损坏。
 >
 > 请使用 `/api/file/*` 系列 API（如 `/api/file/getFile`、`/api/file/putFile`）。

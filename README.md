@@ -4,6 +4,14 @@
 
 这些 skills 遵循 [Claude Skills 规范](https://github.com/anthropics/skills)，可被 Claude Code 和其他兼容 agent 使用。
 
+## ⚠️ 重要更新
+
+### 2026-01-31
+
+- **🚨 中文编码警告**：新增重要提示，禁止使用 curl 直接推送包含中文的内容，会导致乱码问题。必须使用 Python、JavaScript 等编程语言调用 API 确保 UTF-8 编码正确。
+- **📁 资源路径修正**：修正全局 assets 目录路径为 `{local_path}/data/assets/`
+- **🖼️ 图片处理更新**：完善图片上传和插入到思源笔记的流程文档
+
 ## 概述
 
 本仓库包含多个针对思源笔记的 Claude Code Skills，采用**分层设计**：
@@ -162,7 +170,7 @@ skills/
 {
     "api_url": "http://127.0.0.1:6806",
     "api_token": "your-api-token",
-    "local_path": "/path/to/siyuan/workspace",
+    "local_path": "/path/to/siyuan",
     "remote_path": {
         "webdav": true,
         "url": "https://your-webdav-server.com",
@@ -172,6 +180,20 @@ skills/
     }
 }
 ```
+
+> 💡 **路径说明**：
+> - `local_path` 应指向思源笔记的**工作目录**（包含 `data/`、`conf/` 等目录的根目录）
+> - 全局 assets 路径为：`{local_path}/data/assets/`
+> - 图片引用语法：`assets/filename.ext`（相对于 data 目录）
+>
+> **示例目录结构**：
+> ```
+> Y:\note\siyuan\              # local_path 指向这里
+> ├── data/
+> │   ├── assets/              # 全局资源目录
+> │   └── {笔记本ID}/
+> └── conf/
+> ```
 
 ## 贡献
 
