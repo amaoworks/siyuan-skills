@@ -16,6 +16,12 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
+SKILLS_ROOT = Path(__file__).resolve().parents[2]
+if str(SKILLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILLS_ROOT))
+
+from _shared.siyuan_common import read_config as shared_read_config
+
 
 class SiYuanImporter:
     """思源笔记导入器"""
@@ -36,15 +42,7 @@ class SiYuanImporter:
             with open(config_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
 
-        # 从脚本位置向上查找配置文件
-        script_dir = Path(__file__).parent
-        for _ in range(6):
-            config_file = script_dir / 'siyuan.json'
-            if config_file.exists():
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            script_dir = script_dir.parent
-        return None
+        return shared_read_config(config_path or __file__)
 
     def _request(self, endpoint, data=None):
         """发送 API 请求

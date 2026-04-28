@@ -164,7 +164,7 @@ skills/
 
 ### 配置文件
 
-确保 `.claude/siyuan.json` 包含：
+推荐在仓库根目录放置 `.claude/siyuan.json`（也兼容根目录 `siyuan.json`）：
 
 ```json
 {
@@ -185,6 +185,9 @@ skills/
 > - `local_path` 应指向思源笔记的**工作目录**（包含 `data/`、`conf/` 等目录的根目录）
 > - 全局 assets 路径为：`{local_path}/data/assets/`
 > - 图片引用语法：`assets/filename.ext`（相对于 data 目录）
+> - 如果思源运行在 Docker 中，而 skill/脚本运行在宿主机上，`local_path` 应填写**宿主机可访问的挂载路径**
+> - 只有当脚本本身也运行在容器内时，`local_path` 才应填写容器内路径（例如 `/siyuan/workspace/`）
+> - 如果不使用 WebDAV，保留 `local_path` 即可；`remote_path` 可以省略，或保留但设置 `webdav: false`
 >
 > **示例目录结构**：
 > ```
@@ -194,6 +197,80 @@ skills/
 > │   └── {笔记本ID}/
 > └── conf/
 > ```
+
+### Docker 配置说明
+
+如果你的思源跑在 Docker 容器里，需要先判断这个 skill 是在哪里执行：
+
+- **脚本在宿主机执行**：`local_path` 填宿主机挂载出来的目录，例如 `/Users/you/siyuan-workspace`
+- **脚本也在同一个容器内执行**：`local_path` 才填写容器内路径，例如 `/siyuan/workspace`
+
+`remote_path` 只有在需要通过 WebDAV 上传资源时才需要配置；否则可以关闭 `webdav` 或直接不填该段。
+
+### 资源上传模式
+
+当前仓库里的图片/资源处理分成两种模式，不是都通过思源 API 上传二进制文件：
+
+#### 模式一：本地直写模式（推荐）
+
+满足以下条件时启用：
+
+- `local_path` 已配置
+- skill/脚本可以访问这个思源工作目录
+
+处理方式：
+
+1. 脚本直接把图片或 SVG 写入 `{local_path}/data/assets/`
+2. 文档中使用 `assets/文件名` 这种相对路径引用
+3. 再通过思源 API 创建文档或追加块内容
+
+这种模式下，**不需要配置 `remote_path`**。
+
+#### 模式二：WebDAV 模式
+
+适用于以下场景：
+
+- 脚本不能直接访问思源工作目录
+- 你希望通过远端存储同步资源
+
+这时需要配置：
+
+```json
+{
+    "remote_path": {
+        "webdav": true,
+        "url": "https://your-webdav-server.com",
+        "username": "username",
+        "password": "password",
+        "assets_path": "/assets"
+    }
+}
+```
+
+处理方式：
+
+1. 脚本通过 WebDAV `PUT` 上传资源文件
+2. 返回 `assets/文件名` 供文档引用
+3. 再通过思源 API 写入文档内容
+
+#### 什么时候需要 `remote_path`
+
+- **需要**：你要走 WebDAV 模式
+- **不需要**：你已经配置了 `local_path`，而且脚本能直接访问思源工作目录
+
+#### 什么时候是“通过 API 处理”
+
+当前实现里，思源 API 主要用于：
+
+- 创建笔记本
+- 创建文档
+- 查询文档
+- 追加图片块或其他 Markdown 内容
+
+当前实现里，**图片文件本身**不是通过思源 API 上传的，而是：
+
+- 优先写入本地 `data/assets/`
+- 或者通过 WebDAV 上传
 
 ## 贡献
 

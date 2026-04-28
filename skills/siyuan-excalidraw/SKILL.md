@@ -36,7 +36,7 @@ metadata:
 
 ### 路径选择规则
 
-1. **优先使用 `local_path`**：如果 `local_path` 非空，直接保存到该路径下的 `assets/` 目录
+1. **优先使用 `local_path`**：如果 `local_path` 非空，直接保存到该路径下的 `data/assets/` 目录
 2. **备选使用 `remote_path`**：如果 `local_path` 为空，通过 WebDAV 上传到 `remote_path.assets_path`
 
 ## 图表类型选择指南
@@ -466,7 +466,7 @@ else:
 #### 成功
 
 ```
-ASSET_PATH|assets/excalidraw-系统架构-20260125171200.svg|已保存到本地: /path/to/assets/excalidraw-系统架构-20260125171200.svg
+ASSET_PATH|assets/excalidraw-系统架构-20260125171200.svg|已保存到本地: /path/to/siyuan/data/assets/excalidraw-系统架构-20260125171200.svg
 ```
 
 #### 失败
@@ -478,13 +478,19 @@ ERROR|上传失败: WebDAV 连接超时
 ### 路径选择逻辑
 
 1. **检查 `local_path`**：如果 `local_path` 非空且有效，直接保存到本地
-   - 保存路径：`{local_path}/assets/{filename}`
+   - 保存路径：`{local_path}/data/assets/{filename}`
 
 2. **使用 WebDAV**：如果 `local_path` 为空，检查 `remote_path.webdav`
    - 上传 URL：`{remote_path.url}/{remote_path.assets_path}{filename}`
    - 使用 Basic Authentication 进行认证
 
 3. **失败处理**：如果两者都不可用，返回错误信息
+
+### 配置补充说明
+
+- `local_path` 应指向思源工作目录根目录，而不是 `assets` 目录本身
+- 如果思源运行在 Docker 中，只有当脚本也运行在容器内时才应填写容器路径；否则请填写宿主机挂载路径
+- 不使用 WebDAV 时，只保留 `local_path` 即可；`remote_path.webdav` 可设为 `false`
 
 ### WebDAV 上传详情
 

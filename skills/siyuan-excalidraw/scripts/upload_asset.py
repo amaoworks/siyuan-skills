@@ -24,40 +24,27 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urljoin
 
+SKILLS_ROOT = Path(__file__).resolve().parents[2]
+if str(SKILLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILLS_ROOT))
+
+from _shared.siyuan_common import find_config_file as shared_find_config_file
+from _shared.siyuan_common import read_config as shared_read_config
+from _shared.siyuan_common import resolve_assets_dir
+
 
 def find_config_file():
     """
     查找思源笔记配置文件
 
-    按以下顺序查找：
-    1. 当前目录下的 siyuan.json
-    2. 上级目录下的 siyuan.json
-    3. 更上级目录下的 siyuan.json
-    4. 逐层向上查找，直到找到或到达根目录
+    按以下顺序逐层向上查找：
+    1. .claude/siyuan.json
+    2. siyuan.json
 
     Returns:
         Path: 配置文件路径，如果找不到返回 None
     """
-    # 获取当前脚本所在目录
-    script_dir = Path(__file__).parent.resolve()
-
-    # 逐层向上查找配置文件
-    current_dir = script_dir
-    max_levels = 6  # 最多向上查找 6 层
-
-    for _ in range(max_levels):
-        config_path = current_dir / "siyuan.json"
-        if config_path.exists():
-            return config_path
-
-        # 检查是否已到达根目录
-        if current_dir == current_dir.parent:
-            break
-
-        # 向上一层
-        current_dir = current_dir.parent
-
-    return None
+    return shared_find_config_file(__file__)
 
 
 def read_config():
@@ -71,18 +58,7 @@ def read_config():
         FileNotFoundError: 配置文件不存在
         json.JSONDecodeError: 配置文件格式错误
     """
-    config_file = find_config_file()
-
-    if not config_file:
-        raise FileNotFoundError(
-            "配置文件 siyuan.json 未找到。"
-            "请确保配置文件存在于项目根目录或 skill 目录的上级目录中。"
-        )
-
-    with open(config_file, "r", encoding="utf-8") as f:
-        config = json.load(f)
-
-    return config
+    return shared_read_config(__file__)
 
 
 def generate_filename(topic):
@@ -118,12 +94,8 @@ def save_local(svg_content, local_path, filename):
     Raises:
         OSError: 目录创建或文件写入失败
     """
-    # 确保 local_path 结尾有路径分隔符
-    if not local_path.endswith(os.sep):
-        local_path += os.sep
-
     # 确保存在 assets 子目录
-    assets_path = Path(local_path) / "assets"
+    assets_path = resolve_assets_dir(local_path)
     assets_path.mkdir(parents=True, exist_ok=True)
 
     # 保存文件
@@ -225,7 +197,7 @@ def upload_asset(svg_content, topic):
             return (
                 True,
                 asset_path,
-                f"已保存到本地: {Path(local_path) / 'assets' / filename}",
+                f"已保存到本地: {Path(local_path) / 'data' / 'assets' / filename}",
             )
 
         # 否则使用 WebDAV 上传
@@ -267,7 +239,7 @@ def print_usage():
     print("环境要求:")
     print("  - Python 3.6+")
     print("  - requests 库 (pip install requests)")
-    print("  - siyuan.json 配置文件")
+    print("  - .claude/siyuan.json 或 siyuan.json 配置文件")
     print()
 
 

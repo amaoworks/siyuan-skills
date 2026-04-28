@@ -108,7 +108,7 @@ curl -X POST "..." -d '{"markdown": "中文内容"}'
 
 ## 配置文件
 
-确保 `.claude/siyuan.json` 包含：
+推荐在仓库根目录放置 `.claude/siyuan.json`（也兼容根目录 `siyuan.json`）：
 
 ```json
 {
@@ -117,6 +117,10 @@ curl -X POST "..." -d '{"markdown": "中文内容"}'
     "local_path": "/path/to/siyuan/workspace"
 }
 ```
+
+- `local_path` 应指向思源工作目录根目录，资源会保存到 `{local_path}/data/assets/`
+- 如果思源在 Docker 中而脚本在宿主机执行，`local_path` 应填写宿主机挂载路径，而不是容器内路径
+- 不使用 WebDAV 时，`remote_path` 可以省略，或保留但设置 `webdav: false`
 
 ## 常见问题
 

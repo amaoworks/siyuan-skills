@@ -24,6 +24,14 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 from typing import Optional
 
+SKILLS_ROOT = Path(__file__).resolve().parents[2]
+if str(SKILLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILLS_ROOT))
+
+from _shared.siyuan_common import find_config_file as shared_find_config_file
+from _shared.siyuan_common import read_config as shared_read_config
+from _shared.siyuan_common import resolve_assets_dir
+
 
 # 常见图片扩展名映射
 IMAGE_EXTENSIONS = {
@@ -40,31 +48,14 @@ def find_config_file():
     """
     查找思源笔记配置文件
 
-    按以下顺序查找：
-    1. 当前目录下的 siyuan.json
-    2. 上级目录下的 siyuan.json
-    3. 更上级目录下的 siyuan.json
-    4. 逐层向上查找，直到找到或到达根目录
+    按以下顺序逐层向上查找：
+    1. .claude/siyuan.json
+    2. siyuan.json
 
     Returns:
         Path: 配置文件路径，如果找不到返回 None
     """
-    script_dir = Path(__file__).parent.resolve()
-
-    current_dir = script_dir
-    max_levels = 6
-
-    for _ in range(max_levels):
-        config_path = current_dir / "siyuan.json"
-        if config_path.exists():
-            return config_path
-
-        if current_dir == current_dir.parent:
-            break
-
-        current_dir = current_dir.parent
-
-    return None
+    return shared_find_config_file(__file__)
 
 
 def read_config():
@@ -74,18 +65,7 @@ def read_config():
     Returns:
         dict: 配置内容
     """
-    config_file = find_config_file()
-
-    if not config_file:
-        raise FileNotFoundError(
-            "配置文件 siyuan.json 未找到。"
-            "请确保配置文件存在于项目根目录或 skill 目录的上级目录中。"
-        )
-
-    with open(config_file, "r", encoding="utf-8") as f:
-        config = json.load(f)
-
-    return config
+    return shared_read_config(__file__)
 
 
 def get_image_extension(content_type: str, url: str) -> str:
@@ -183,10 +163,7 @@ def save_local(image_content: bytes, local_path: str, filename: str) -> str:
     Returns:
         str: 资源路径（相对于 assets 目录）
     """
-    if not local_path.endswith(os.sep):
-        local_path += os.sep
-
-    assets_path = Path(local_path) / "assets"
+    assets_path = resolve_assets_dir(local_path)
     assets_path.mkdir(parents=True, exist_ok=True)
 
     file_path = assets_path / filename
@@ -305,7 +282,7 @@ def upload_image(image_url: str, description: str = "image") -> tuple[bool, str,
             return (
                 True,
                 asset_path,
-                f"已保存到本地: {Path(local_path) / 'assets' / filename}"
+                f"已保存到本地: {Path(local_path) / 'data' / 'assets' / filename}"
             )
 
         # 否则使用 WebDAV 上传
@@ -348,7 +325,7 @@ def print_usage():
     print("环境要求:")
     print("  - Python 3.6+")
     print("  - requests 库 (pip install requests)")
-    print("  - siyuan.json 配置文件")
+    print("  - .claude/siyuan.json 或 siyuan.json 配置文件")
 
 
 def main():

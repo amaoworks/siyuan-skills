@@ -31,32 +31,22 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urljoin
 
+SKILLS_ROOT = Path(__file__).resolve().parents[2]
+if str(SKILLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILLS_ROOT))
+
+from _shared.siyuan_common import find_config_file as shared_find_config_file
+from _shared.siyuan_common import read_config as shared_read_config
+
 
 def find_config_file():
     """查找思源笔记配置文件"""
-    script_dir = Path(__file__).parent.resolve()
-    current_dir = script_dir
-    max_levels = 6
-
-    for _ in range(max_levels):
-        config_path = current_dir / "siyuan.json"
-        if config_path.exists():
-            return config_path
-        if current_dir == current_dir.parent:
-            break
-        current_dir = current_dir.parent
-
-    return None
+    return shared_find_config_file(__file__)
 
 
 def read_config():
     """读取思源笔记配置文件"""
-    config_file = find_config_file()
-    if not config_file:
-        raise FileNotFoundError("配置文件 siyuan.json 未找到")
-
-    with open(config_file, "r", encoding="utf-8") as f:
-        return json.load(f)
+    return shared_read_config(__file__)
 
 
 def find_doc_by_title(config, title):
