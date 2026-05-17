@@ -48,6 +48,8 @@ curl -X POST http://127.0.0.1:6806/api/xxx \
 | /api/filetree/moveDocs | 移动文档 |
 | /api/filetree/getHPathByPath | 根据路径获取人类可读路径 |
 | /api/filetree/getHPathByID | 根据 ID 获取人类可读路径 |
+| /api/filetree/getIDsByHPath | 根据人类可读路径获取文档 IDs |
+| /api/filetree/getPathByID | 根据 ID 获取系统路径 |
 
 ### 文件操作 `/api/file/*`
 
@@ -105,6 +107,31 @@ curl -X POST http://127.0.0.1:6806/api/attr/setBlockAttrs \
       "custom-priority": "high",
       "custom-status": "doing"
     }
+  }'
+```
+
+### 根据人类可读路径获取文档 IDs
+
+用于把 wiki 的“参考来源”写成可跳转块引用。`path` 使用人类可读路径，例如 `/raw/出行/日本`；该接口返回的 `data` 是一个 ID 数组，通常取第一个结果再写成 `((文档ID "日本"))`。
+
+```bash
+curl -X POST http://127.0.0.1:6806/api/filetree/getIDsByHPath \
+  -H "Content-Type: application/json" \
+  -d '{
+    "path": "/raw/出行/日本",
+    "notebook": "笔记本ID"
+  }'
+```
+
+### 根据 ID 获取系统路径
+
+可用于把文档 ID 解析为 `notebook` 和 `.sy` 存储路径，便于 `removeDoc`、`getFile` 或排查文件位置。
+
+```bash
+curl -X POST http://127.0.0.1:6806/api/filetree/getPathByID \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "20260514161405-wh4qijh"
   }'
 ```
 
@@ -201,6 +228,11 @@ curl -X POST http://127.0.0.1:6806/api/file/getFile \
   "custom-dailynote-20250125": "20250125"
 }
 ```
+
+## 已知注意事项 / 待补充
+
+- `/api/filetree/getIDsByHPath` 的返回值 `data` 是 **ID 数组**，调用方不应假设永远只有一个结果；写来源引用前应检查结果数量，必要时结合 `notebook`、`hpath` 或 SQL 再次确认。
+- 本文档当前优先覆盖本 skill 常用接口；`/api/filetree/renameDocByID`、`/api/filetree/removeDocByID`、`/api/filetree/moveDocsByID` 等官方已提供但本文尚未展开的接口，后续补齐时应继续以官网 `API.md` / `API_zh_CN.md` 为准。
 
 ## 相关资源
 

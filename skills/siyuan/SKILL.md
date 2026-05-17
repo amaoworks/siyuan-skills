@@ -160,6 +160,7 @@ print("[成功] 文档创建成功!")  # 而不是 ✅
 **关键区别**：
 - **系统路径**：`/20260125135312-pkzku0u.sy` （用于 `removeDoc`）
 - **人类可读路径**：`/测试文档-20260125-135311` （用于显示）
+- **文档块 ID**：`20260125135312-pkzku0u` （用于块引用，如 `((20260125135312-pkzku0u "来源标题"))`）
 
 **正确用法**：
 ```python
@@ -174,6 +175,23 @@ query = f"SELECT path FROM blocks WHERE id = '{doc_id}'"
 result = api.query_sql(query)
 system_path = result[0]['path']  # /20260125135312-pkzku0u.sy
 ```
+
+**写来源引用的正确用法**：
+```python
+# wiki 的“参考来源”必须引用真实文档块 ID，而不是只写 [[标题]]
+query = """
+SELECT id, hpath
+FROM blocks
+WHERE type = 'd'
+AND hpath = '/raw/出行/日本'
+LIMIT 1
+"""
+result = api.query_sql(query)
+source_id = result[0]['id']
+source_ref = f'(({source_id} "日本")) - 原始素材'
+```
+
+也可以使用 `/api/filetree/getIDsByHPath` 从人类可读路径解析文档 IDs（通常返回数组）。
 
 #### 4. API 端点验证
 **问题**：使用了不存在的 API 端点（如 `/api/block/getBlockInfo`），导致请求失败。
