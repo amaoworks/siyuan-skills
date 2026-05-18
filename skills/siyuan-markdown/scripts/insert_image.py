@@ -26,124 +26,38 @@
 import json
 import os
 import sys
-import requests
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import urljoin
 
 SKILLS_ROOT = Path(__file__).resolve().parents[2]
 if str(SKILLS_ROOT) not in sys.path:
     sys.path.insert(0, str(SKILLS_ROOT))
 
-from _shared.siyuan_common import find_config_file as shared_find_config_file
-from _shared.siyuan_common import read_config as shared_read_config
+from _shared.siyuan_client import SiyuanClient
 
 
-def find_config_file():
-    """查找思源笔记配置文件"""
-    return shared_find_config_file(__file__)
-
-
-def read_config():
-    """读取思源笔记配置文件"""
-    return shared_read_config(__file__)
-
-
-def find_doc_by_title(config, title):
-    """通过标题查找文档"""
-    api_url = config.get("api_url", "")
-    api_token = config.get("api_token", "")
-
-    if not api_url.endswith("/"):
-        api_url += "/"
-
-    headers = {
-        "Content-Type": "application/json",
-    }
-    if api_token:
-        headers["Authorization"] = f"Token {api_token}"
-
-    # SQL 查询查找包含指定标题的文档
-    stmt = f"SELECT * FROM blocks WHERE content LIKE '%{title}%' AND type = 'd'"
-
-    response = requests.post(
-        urljoin(api_url, "api/query/sql"),
-        headers=headers,
-        json={"stmt": stmt},
-        timeout=30,
+def find_doc_by_title(client, title):
+    """通过标题（模糊匹配）查找文档，返回 doc_id。"""
+    blocks = client.sql(
+        f"SELECT * FROM blocks WHERE content LIKE '%{title}%' AND type = 'd'"
     )
-
-    if response.status_code != 200:
-        raise Exception(f"Query failed: {response.text}")
-
-    data = response.json()
-    if data.get("code") != 0:
-        raise Exception(f"Query failed: {data.get('msg')}")
-
-    blocks = data.get("data", [])
     if not blocks:
         raise Exception(f"Document not found: {title}")
-
-    # 找到最匹配的文档
     for block in blocks:
-        content = block.get("content", "")
-        if title in content:
+        if title in block.get("content", ""):
             return block.get("id")
-
     raise Exception(f"Document not found: {title}")
 
 
-def append_image_to_doc(doc_id, image_path, caption, is_url=False, config=None):
-    """在文档末尾追加图片块
-
-    Args:
-        doc_id: 文档块 ID
-        image_path: 图片路径（本地 assets 路径或 URL）
-        caption: 图片说明文字
-        is_url: 是否为 URL 链接
-        config: 配置对象
-    """
-    api_url = config.get("api_url", "") if config else ""
-    api_token = config.get("api_token", "") if config else ""
-
-    if not api_url.endswith("/"):
-        api_url += "/"
-
-    headers = {
-        "Content-Type": "application/json",
-    }
-    if api_token:
-        headers["Authorization"] = f"Token {api_token}"
-
-    # 准备图片内容
+def append_image_to_doc(client, doc_id, image_path, caption, is_url=False):
+    """在文档末尾追加图片块。client 负责 UTF-8 编码，caption 含中文无乱码风险。"""
     if caption:
-        image_markdown = f"![{caption}]({image_path} \"{caption}\")"
+        image_markdown = f'![{caption}]({image_path} "{caption}")'
     else:
         image_markdown = f"![]({image_path})"
-
-    # 添加时间戳注释
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     content = f"\n{image_markdown}\n\n*Inserted at {timestamp}*\n"
-
-    response = requests.post(
-        urljoin(api_url, "api/block/appendBlock"),
-        headers=headers,
-        json={
-            "dataType": "markdown",
-            "data": content,
-            "parentID": doc_id,
-        },
-        timeout=30,
-    )
-
-    if response.status_code != 200:
-        raise Exception(f"Append block failed: {response.text}")
-
-    result = response.json()
-    if result.get("code") != 0:
-        raise Exception(f"Append block failed: {result.get('msg')}")
-
-    return result.get("data")
+    return client.append_block(parent_id=doc_id, markdown=content)
 
 
 def print_usage():
@@ -189,16 +103,9 @@ def main():
         caption = sys.argv[4] if len(sys.argv) > 4 else ""
 
     try:
-        # 读取配置
-        config = read_config()
-
-        # 查找文档
-        doc_id = find_doc_by_title(config, doc_title)
-
-        # 插入图片
-        block_id = append_image_to_doc(doc_id, image_path, caption, is_url, config)
-
-        # 输出成功结果
+        client = SiyuanClient.from_config(__file__)
+        doc_id = find_doc_by_title(client, doc_title)
+        block_id = append_image_to_doc(client, doc_id, image_path, caption, is_url)
         print(f"SUCCESS|{block_id}|Image inserted successfully")
 
     except Exception as e:

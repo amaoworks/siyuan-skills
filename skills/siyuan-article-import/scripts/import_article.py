@@ -10,7 +10,6 @@
     python import_article.py "https://mp.weixin.qq.com/s/xxx" "微信文章收藏"
 """
 
-import requests
 import json
 import sys
 from pathlib import Path
@@ -20,141 +19,59 @@ SKILLS_ROOT = Path(__file__).resolve().parents[2]
 if str(SKILLS_ROOT) not in sys.path:
     sys.path.insert(0, str(SKILLS_ROOT))
 
-from _shared.siyuan_common import read_config as shared_read_config
+from _shared.siyuan_client import SiyuanAPIError, SiyuanClient
 
 
 class SiYuanImporter:
-    """思源笔记导入器"""
+    """思源笔记导入器（基于 SiyuanClient）。"""
 
     def __init__(self, config_path=None):
-        """初始化导入器
+        """初始化导入器。
 
         Args:
-            config_path: 配置文件路径，默认自动查找 siyuan.json
+            config_path: .json 配置文件路径直读；为 None 时向上查找 siyuan.json。
         """
-        self.config = self._load_config(config_path)
-        if not self.config:
-            raise Exception("配置文件未找到")
-
-    def _load_config(self, config_path=None):
-        """加载配置文件"""
-        if config_path:
+        if config_path and Path(config_path).is_file():
             with open(config_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-
-        return shared_read_config(config_path or __file__)
-
-    def _request(self, endpoint, data=None):
-        """发送 API 请求
-
-        Args:
-            endpoint: API 端点（如 /api/notebook/createNotebook）
-            data: 请求数据（字典）
-
-        Returns:
-            API 响应的 data 字段，失败返回 None
-        """
-        url = f"{self.config['api_url'].rstrip('/')}{endpoint}?token={self.config['api_token']}"
-
-        try:
-            response = requests.post(
-                url,
-                json=data,
-                headers={'Content-Type': 'application/json'}
-            )
-            result = response.json()
-
-            if result.get('code') == 0:
-                return result.get('data')
-            else:
-                print(f"ERROR|{result.get('msg', '请求失败')}|")
-                return None
-        except Exception as e:
-            print(f"ERROR|{str(e)}|")
-            return None
+                cfg = json.load(f)
+            self.client = SiyuanClient(api_url=cfg['api_url'], api_token=cfg['api_token'])
+        else:
+            self.client = SiyuanClient.from_config(__file__)
 
     def create_notebook(self, name):
-        """创建笔记本
-
-        Args:
-            name: 笔记本名称
-
-        Returns:
-            笔记本 ID，失败返回 None
-        """
-        data = self._request('/api/notebook/createNotebook', {'name': name, 'icon': ''})
-        if data:
-            return data['notebook']['id']
-        return None
+        """创建笔记本，返回 ID；失败返回 None。"""
+        try:
+            data = self.client.call('/api/notebook/createNotebook', name=name, icon='')
+            return data['notebook']['id'] if data else None
+        except SiyuanAPIError as e:
+            print(f"ERROR|{e.msg}|")
+            return None
 
     def ensure_notebook_exists(self, name):
-        """确保笔记本存在，不存在则创建
-
-        Args:
-            name: 笔记本名称
-
-        Returns:
-            笔记本 ID
-        """
-        # 先查询是否已存在
-        notebooks = self._request('/api/notebook/lsNotebooks')
-        if notebooks:
-            for nb in notebooks:
-                if nb.get('name') == name:
-                    return nb.get('id')
-
-        # 不存在则创建
+        """确保笔记本存在，不存在则创建，返回 ID。"""
+        for nb in self.client.list_notebooks():
+            if nb.get('name') == name:
+                return nb.get('id')
         return self.create_notebook(name)
 
     def create_document(self, notebook_id, title, content):
-        """创建文档
-
-        Args:
-            notebook_id: 笔记本 ID
-            title: 文档标题
-            content: Markdown 格式的内容
-
-        Returns:
-            文档 ID，失败返回 None
-        """
-        # 清理标题，移除特殊字符
-        safe_title = title.replace('/', '-').replace('\\', '-').replace(':', '-')
-        # 限制标题长度
-        if len(safe_title) > 50:
-            safe_title = safe_title[:50]
-
-        path = f'/{safe_title}'
-
-        data = self._request('/api/filetree/createDocWithMd', {
-            'notebook': notebook_id,
-            'path': path,
-            'markdown': content
-        })
-
-        if data:
-            return data
-        return None
+        """创建文档；client 负责 UTF-8 编码，含中文/引号/换行均安全。返回 doc_id 或 None。"""
+        safe_title = title.replace('/', '-').replace('\\', '-').replace(':', '-')[:50]
+        try:
+            return self.client.create_doc_with_md(notebook_id, f'/{safe_title}', content)
+        except SiyuanAPIError as e:
+            print(f"ERROR|{e.msg}|")
+            return None
 
     def verify_document(self, doc_id):
-        """验证文档是否创建成功
-
-        Args:
-            doc_id: 文档 ID
-
-        Returns:
-            内容块数量，失败返回 -1
-        """
-        query = f"SELECT COUNT(*) as count FROM blocks WHERE root_id='{doc_id}'"
-        response = requests.post(
-            f"{self.config['api_url']}/api/query/sql?token={self.config['api_token']}",
-            json={'stmt': query},
-            headers={'Content-Type': 'application/json'}
-        )
-
-        result = response.json()
-        if result.get('code') == 0 and result.get('data'):
-            return result['data'][0]['count']
-        return -1
+        """验证文档块数量；失败返回 -1。"""
+        try:
+            rows = self.client.sql(
+                f"SELECT COUNT(*) as count FROM blocks WHERE root_id='{doc_id}'"
+            )
+            return rows[0]['count'] if rows else -1
+        except SiyuanAPIError:
+            return -1
 
 
 def format_article_content(title, content, url, author='', cover_image=''):

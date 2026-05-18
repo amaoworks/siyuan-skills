@@ -11,16 +11,9 @@
 
 ## 认证
 
-如果思源笔记开启了 API Token 认证，需要在请求头中携带 Token：
+API Token 配置在 `siyuan.json` 的 `api_token` 字段。`SiyuanClient.from_config(__file__)` 会自动加载并附加到每次请求，无需手写 Header。
 
-```bash
-curl -X POST http://127.0.0.1:6806/api/xxx \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Token YOUR_API_TOKEN" \
-  -d '{"key": "value"}'
-```
-
-> 💡 **提示**：API Token 在思源笔记设置 → 关于 → API Token 中获取或设置。
+> 💡 API Token 在思源设置 → 关于 → API Token 中获取或设置。
 
 ## 常用 API 端点分类
 
@@ -137,16 +130,6 @@ data = client.get_file("/data/20210808180117-6v0mkxr/20210808180117-czj9bvb.sy")
 ```python
 client.call("/api/notebook/lsNotebooks")
 client.call("/api/block/appendBlock", dataType="markdown", data="# 标题", parentID="父块ID")
-```
-
----
-
-### curl（仅限只读英文端点的临时调试）
-
-仅用于确认端点是否在线之类的轻量调试。**禁止用 curl 推送中文或嵌套引号内容** —— shell 转义会损坏 JSON 导致乱码：
-
-```bash
-curl -X POST "http://127.0.0.1:6806/api/notebook/lsNotebooks?token=YOUR_TOKEN"
 ```
 
 ## 响应格式

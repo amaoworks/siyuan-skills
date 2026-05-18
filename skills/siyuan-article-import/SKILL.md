@@ -75,20 +75,9 @@ if result.returncode == 0:
 
 ## 关键约束
 
-### Windows 环境乱码问题
+### API 调用必须用 SiyuanClient
 
-**重要：Windows 下必须使用 Python 脚本调用 API，避免 curl 中文乱码**
-
-```python
-# ✅ 正确
-response = requests.post(
-    f'{api_url}/api/filetree/createDocWithMd?token={token}',
-    json={'notebook': nb_id, 'path': '/标题', 'markdown': content}
-)
-
-# ❌ 错误（会产生乱码）
-curl -X POST "..." -d '{"markdown": "中文内容"}'
-```
+所有思源 API 调用必须通过 `_shared.siyuan_client.SiyuanClient`，不要用 curl 或手写 `requests.post`。详见 [siyuan/SKILL.md](../siyuan/SKILL.md) 顶部硬约束。
 
 ### 文档命名规范
 

@@ -12,7 +12,7 @@ license: Complete terms in LICENSE.txt
 
 **所有 API 调用必须用 Python，不要用 curl。** 使用 `_shared/siyuan_client.py` 提供的 `SiyuanClient`，常用端点已封装；UTF-8 编码由 `requests` 库保证，中文 / 嵌套引号 / 多行内容写入思源不会乱码。
 
-curl 仅限只读、纯英文端点的临时调试。**禁止用 curl 写入中文或多行内容** —— shell 转义会损坏 JSON，写进思源的内容会乱码。后文为简洁起见仍出现少量 curl 片段，仅作端点形式说明；实际调用请改用 Python。
+curl 仅限只读、纯英文端点的临时调试。**禁止用 curl 写入中文或多行内容** —— shell 转义会损坏 JSON，写进思源的内容会乱码。
 
 ```python
 from _shared.siyuan_client import SiyuanClient
@@ -88,18 +88,12 @@ Content-Type: application/json
 
 ### API 示例
 
-#### 获取块 Kramdown 源码
-```bash
-curl -X POST http://127.0.0.1:6806/api/block/getBlockKramdown \
-  -H "Content-Type: application/json" \
-  -d '{"id": "202008250000-a1b2c3d"}'
-```
+```python
+from _shared.siyuan_client import SiyuanClient
+client = SiyuanClient.from_config(__file__)
 
-#### SQL 查询
-```bash
-curl -X POST http://127.0.0.1:6806/api/query/sql \
-  -H "Content-Type: application/json" \
-  -d '{"stmt": "SELECT * FROM blocks WHERE type=\"d\""}'
+client.get_block_kramdown("202008250000-a1b2c3d")
+client.sql("SELECT * FROM blocks WHERE type='d'")
 ```
 
 ### 模板示例
