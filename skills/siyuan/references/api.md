@@ -69,7 +69,7 @@ API Token 配置在 `siyuan.json` 的 `api_token` 字段。`SiyuanClient.from_co
 
 ## Python 调用示例（推荐用法）
 
-所有 API 调用通过 `_shared.siyuan_client.SiyuanClient`。它内部用 `requests`，UTF-8 编码由库保证；中文 / 嵌套引号 / 多行内容写入思源都不会乱码。
+所有 API 调用通过 `_shared.siyuan_client.SiyuanClient`。它内部用 `requests`（依赖：`pip install requests` 或 `apt install python3-requests`），UTF-8 编码由库保证；中文 / 嵌套引号 / 多行内容写入思源都不会乱码。
 
 ```python
 from _shared.siyuan_client import SiyuanClient
@@ -148,63 +148,11 @@ client.call("/api/block/appendBlock", dataType="markdown", data="# 标题", pare
 - `msg`: 错误信息或提示信息
 - `data`: 返回的具体数据
 
-## 重要警告
+## 文件操作警告
 
-### 🚨 中文编码警告（非常重要！）
-
-> ⚠️ **禁止使用 curl 直接推送包含中文的内容**！
+> ⚠️ 插件或外部扩展读写 `data` 目录下的文件**必须通过内核 API**，不要自行调用 `fs` 等 Node.js API，否则可能导致数据同步时分块丢失，造成云端数据损坏。
 >
-> 使用 curl 命令直接向思源笔记 API 推送中文内容会导致**乱码问题**。
->
-> **错误示例**（会产生乱码）：
-> ```bash
-> curl -X POST "http://127.0.0.1:6806/api/filetree/createDocWithMd" \
->   -H "Authorization: Token YOUR_TOKEN" \
->   -H "Content-Type: application/json" \
->   -d '{"markdown": "这是中文内容"}'
-> ```
->
-> **正确做法**：使用编程语言（Python、JavaScript 等）调用 API，确保正确的 UTF-8 编码：
->
-> **Python 示例**（推荐）：
-> ```python
-> import requests
->
-> response = requests.post(
->     'http://127.0.0.1:6806/api/filetree/createDocWithMd',
->     headers={
->         'Authorization': 'Token YOUR_TOKEN',
->         'Content-Type': 'application/json'
->     },
->     json={
->         'notebook': '笔记本ID',
->         'path': '/文档路径',
->         'markdown': '这是中文内容，编码正常'
->     }
-> )
-> ```
->
-> **Node.js 示例**：
-> ```javascript
-> const response = await fetch('http://127.0.0.1:6806/api/filetree/createDocWithMd', {
->     method: 'POST',
->     headers: {
->         'Authorization': 'Token YOUR_TOKEN',
->         'Content-Type': 'application/json'
->     },
->     body: JSON.stringify({
->         notebook: '笔记本ID',
->         path: '/文档路径',
->         markdown: '这是中文内容，编码正常'
->     })
-> });
-> ```
-
-### 文件操作警告
-
-> ⚠️ **警告**：插件或外部扩展如果需要读取或写入 `data` 目录下的文件，**请通过调用内核 API 来实现**，不要自行调用 `fs` 或其他 Node.js API，否则可能导致数据同步时分块丢失，造成云端数据损坏。
->
-> 请使用 `/api/file/*` 系列 API（如 `/api/file/getFile`、`/api/file/putFile`）。
+> 使用 `/api/file/*` 系列（如 `client.get_file(path)` 或 `client.call("/api/file/putFile", ...)`）。
 
 ## 日记文档属性
 

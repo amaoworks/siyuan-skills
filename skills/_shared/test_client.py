@@ -9,6 +9,7 @@
 import sys
 import time
 from pathlib import Path
+from typing import List, Tuple
 
 SKILLS_ROOT = Path(__file__).resolve().parents[1]
 if str(SKILLS_ROOT) not in sys.path:
@@ -17,8 +18,8 @@ if str(SKILLS_ROOT) not in sys.path:
 from _shared.siyuan_client import SiyuanAPIError, SiyuanClient
 
 
-PASSED: list[str] = []
-FAILED: list[tuple[str, str]] = []
+PASSED: List[str] = []
+FAILED: List[Tuple[str, str]] = []
 
 
 def check(name: str, cond: bool, detail: str = "") -> None:

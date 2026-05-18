@@ -3,6 +3,9 @@
 所有 API 调用都应走这里，不要直接用 curl。
 shell 转义 + UTF-8 在 `curl -d` 上极易导致中文乱码 / JSON 损坏；
 `requests.post(..., json=...)` 由库负责编码，从根上规避。
+
+Requires: requests (>= 2.x), Python >= 3.7.
+Install: `pip install requests` 或 `apt install python3-requests`.
 """
 
 from pathlib import Path

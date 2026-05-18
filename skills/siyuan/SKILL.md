@@ -14,6 +14,8 @@ license: Complete terms in LICENSE.txt
 
 curl 仅限只读、纯英文端点的临时调试。**禁止用 curl 写入中文或多行内容** —— shell 转义会损坏 JSON，写进思源的内容会乱码。
 
+> **依赖**：`requests`（Python ≥ 3.7）。未安装时：`sudo apt install python3-requests`（Debian/Ubuntu）或 `pip install requests`。
+
 ```python
 from _shared.siyuan_client import SiyuanClient
 
@@ -127,114 +129,41 @@ client.sql("SELECT * FROM blocks WHERE type='d'")
 
 ### API 调用注意事项
 
-#### 1. API 调用与输出是分离的
-**问题**：脚本在输出成功消息时崩溃，但 API 调用已经完成，导致重复创建文档。
+#### 1. 调用副作用与输出是分离的
 
-**原因**：
+脚本在 print/log 时崩溃不会回滚 API 已经成功的副作用（如已创建的文档）。重要操作前先用 SQL 检查是否已存在，不要把"没看到成功输出"当成"操作没发生"。
+
+#### 2. 文档路径的三种形式
+
+- **系统路径**：`/20260125135312-pkzku0u.sy` —— 用于 `client.remove_doc`
+- **人类可读路径（hpath）**：`/测试文档-20260125-135311` —— 用于显示和 `client.get_ids_by_hpath`
+- **文档块 ID**：`20260125135312-pkzku0u` —— 用于块引用 `((doc_id "锚文本"))`
+
 ```python
-# API 调用成功
-result = self._request("/api/filetree/createDocWithMd", data)
+# 从 doc_id 查系统路径（删除文档时需要）
+info = client.get_path_by_id(doc_id)
+client.remove_doc(notebook_id, info["path"])     # 注意必须用 .sy 系统路径
 
-# 输出崩溃（但这不影响前面的 API 调用）
-print(f"✅ 文档创建成功!")  # Windows GBK 编码无法显示 emoji
+# 从 hpath 反查 doc_id（写来源引用时需要真实块 ID，不是 [[文档名]]）
+ids = client.get_ids_by_hpath(path="/raw/出行/日本", notebook=notebook_id)
+if ids:
+    source_ref = f'(({ids[0]} "日本")) - 原始素材'
 ```
 
-**解决方案**：
-- API 调用成功后立即返回，将输出放在 try-catch 中
-- 或者将 API 调用和输出分离，确保 API 操作完成后再处理输出
-- 在重复操作前先检查是否已存在
+> `getIDsByHPath` 返回数组，应检查长度。`[[文档名]]` 仅适合一般双链，**不适合作为可验证的来源引用**。
 
-#### 2. 跨平台编码问题
-**问题**：Windows 控制台默认使用 GBK 编码，无法显示某些字符（如 emoji）。
+#### 3. 避免重复操作
 
-**解决方案**：
+脚本崩溃或重复运行容易创建重复文档。创建前用 SQL 检查：
+
 ```python
-# 方法 1：使用 UTF-8 编码运行脚本
-python -X utf8 script.py
-
-# 方法 2：在代码中设置输出编码
-import sys
-import io
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-
-# 方法 3：避免使用特殊字符
-print("[成功] 文档创建成功!")  # 而不是 ✅
-```
-
-#### 3. 文档路径的正确使用
-**问题**：删除文档时使用了错误的路径格式。
-
-**关键区别**：
-- **系统路径**：`/20260125135312-pkzku0u.sy` （用于 `removeDoc`）
-- **人类可读路径**：`/测试文档-20260125-135311` （用于显示）
-- **文档块 ID**：`20260125135312-pkzku0u` （用于块引用，如 `((20260125135312-pkzku0u "来源标题"))`）
-
-**正确用法**：
-```python
-# 错误 - 使用人类可读路径
-api.removeDoc(notebook_id, '/测试文档-20260125-135311')
-
-# 正确 - 使用系统路径（.sy 文件）
-api.removeDoc(notebook_id, '/20260125135312-pkzku0u.sy')
-
-# 获取系统路径的方法
-query = f"SELECT path FROM blocks WHERE id = '{doc_id}'"
-result = api.query_sql(query)
-system_path = result[0]['path']  # /20260125135312-pkzku0u.sy
-```
-
-**写来源引用的正确用法**：
-```python
-# wiki 的“参考来源”必须引用真实文档块 ID，而不是只写 [[标题]]
-query = """
-SELECT id, hpath
-FROM blocks
-WHERE type = 'd'
-AND hpath = '/raw/出行/日本'
-LIMIT 1
-"""
-result = api.query_sql(query)
-source_id = result[0]['id']
-source_ref = f'(({source_id} "日本")) - 原始素材'
-```
-
-也可以使用 `/api/filetree/getIDsByHPath` 从人类可读路径解析文档 IDs（通常返回数组）。
-
-#### 4. API 端点验证
-**问题**：使用了不存在的 API 端点（如 `/api/block/getBlockInfo`），导致请求失败。
-
-**解决方案**：
-- 在使用 API 前，参考官方文档验证端点是否存在
-- 常见错误端点：
-  - ❌ `/api/block/getBlockInfo` → ✅ `/api/block/getBlockKramdown`
-  - ❌ `/api/filetree/getDoc` → ✅ 使用 SQL 查询获取文档内容
-  - ❌ `/api/search/searchBlock` → ✅ 使用 `/api/query/sql` 执行搜索
-
-#### 5. 避免重复操作
-**问题**：由于脚本崩溃或重复运行，导致创建重复文档。
-
-**解决方案**：
-```python
-def ensure_doc_exists(notebook_id, path, markdown_content):
-    """确保文档存在，不存在则创建"""
-    # 先检查是否存在
-    query = f"""
-    SELECT id, content
-    FROM blocks
-    WHERE box = '{notebook_id}'
-    AND hpath = '{path}'
-    AND type = 'd'
-    """
-    result = api.query_sql(query)
-
-    if result:
-        doc_id = result[0]['id']
-        print(f"文档已存在: {path} (ID: {doc_id})")
-        return doc_id
-    else:
-        return api.create_doc(notebook_id, path, markdown_content)
+def ensure_doc_exists(client, notebook_id, hpath, markdown):
+    rows = client.sql(
+        f"SELECT id FROM blocks WHERE box='{notebook_id}' AND hpath='{hpath}' AND type='d'"
+    )
+    if rows:
+        return rows[0]["id"]
+    return client.create_doc_with_md(notebook_id, hpath, markdown)
 ```
 
 ### Markdown 图片格式规范
