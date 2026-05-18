@@ -74,73 +74,79 @@ curl -X POST http://127.0.0.1:6806/api/xxx \
 | /api/attr/setBlockAttrs | 设置块属性 |
 | /api/attr/getBlockAttrs | 获取块属性 |
 
-## curl 调用示例
+## Python 调用示例（推荐用法）
+
+所有 API 调用通过 `_shared.siyuan_client.SiyuanClient`。它内部用 `requests`，UTF-8 编码由库保证；中文 / 嵌套引号 / 多行内容写入思源都不会乱码。
+
+```python
+from _shared.siyuan_client import SiyuanClient
+
+client = SiyuanClient.from_config(__file__)  # 自动加载 .claude/siyuan.json
+```
 
 ### SQL 查询
 
-```bash
-curl -X POST http://127.0.0.1:6806/api/query/sql \
-  -H "Content-Type: application/json" \
-  -d '{"stmt": "SELECT * FROM blocks WHERE type=\"d\" LIMIT 10"}'
+```python
+rows = client.sql("SELECT * FROM blocks WHERE type='d' LIMIT 10")
 ```
 
 ### 插入块
 
-```bash
-curl -X POST http://127.0.0.1:6806/api/block/insertBlock \
-  -H "Content-Type: application/json" \
-  -d '{
-    "dataType": "markdown",
-    "data": "# 新标题\n\n这是内容",
-    "parentID": "父块ID"
-  }'
+```python
+client.insert_block(
+    parent_id="父块ID",
+    markdown="# 新标题\n\n这是内容",  # 中文安全
+)
 ```
 
 ### 设置块属性
 
-```bash
-curl -X POST http://127.0.0.1:6806/api/attr/setBlockAttrs \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "块ID",
-    "attrs": {
-      "custom-priority": "high",
-      "custom-status": "doing"
-    }
-  }'
+```python
+client.set_block_attrs(
+    block_id="块ID",
+    attrs={"custom-priority": "high", "custom-status": "doing"},
+)
 ```
 
 ### 根据人类可读路径获取文档 IDs
 
-用于把 wiki 的“参考来源”写成可跳转块引用。`path` 使用人类可读路径，例如 `/raw/出行/日本`；该接口返回的 `data` 是一个 ID 数组，通常取第一个结果再写成 `((文档ID "日本"))`。
+用于把 wiki 的“参考来源”写成可跳转块引用。`path` 使用人类可读路径，例如 `/raw/出行/日本`；返回 ID 数组，通常取第一个结果再写成 `((文档ID "日本"))`。
 
-```bash
-curl -X POST http://127.0.0.1:6806/api/filetree/getIDsByHPath \
-  -H "Content-Type: application/json" \
-  -d '{
-    "path": "/raw/出行/日本",
-    "notebook": "笔记本ID"
-  }'
+```python
+ids = client.get_ids_by_hpath(path="/raw/出行/日本", notebook="笔记本ID")
+if ids:
+    source_ref = f'(({ids[0]} "日本")) - 原始素材'
 ```
 
 ### 根据 ID 获取系统路径
 
 可用于把文档 ID 解析为 `notebook` 和 `.sy` 存储路径，便于 `removeDoc`、`getFile` 或排查文件位置。
 
-```bash
-curl -X POST http://127.0.0.1:6806/api/filetree/getPathByID \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "20260514161405-wh4qijh"
-  }'
+```python
+info = client.get_path_by_id(block_id="20260514161405-wh4qijh")
 ```
 
 ### 获取文件
 
+```python
+data = client.get_file("/data/20210808180117-6v0mkxr/20210808180117-czj9bvb.sy")
+```
+
+### 任意未封装端点
+
+```python
+client.call("/api/notebook/lsNotebooks")
+client.call("/api/block/appendBlock", dataType="markdown", data="# 标题", parentID="父块ID")
+```
+
+---
+
+### curl（仅限只读英文端点的临时调试）
+
+仅用于确认端点是否在线之类的轻量调试。**禁止用 curl 推送中文或嵌套引号内容** —— shell 转义会损坏 JSON 导致乱码：
+
 ```bash
-curl -X POST http://127.0.0.1:6806/api/file/getFile \
-  -H "Content-Type: application/json" \
-  -d '{"path": "/data/20210808180117-6v0mkxr/20210808180117-czj9bvb.sy"}'
+curl -X POST "http://127.0.0.1:6806/api/notebook/lsNotebooks?token=YOUR_TOKEN"
 ```
 
 ## 响应格式

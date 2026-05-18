@@ -6,6 +6,11 @@
 
 ## ⚠️ 重要更新
 
+### 2026-05-18
+
+- **🔧 统一 API 客户端**：新增 `_shared/siyuan_client.py`，提供 `SiyuanClient` 类封装所有常用端点。所有 skill 调用 API 必须经过它，不再手写 `requests.post` 或 curl。详见下方「API 调用约定」一节。
+- **🚨 硬约束前置**：`siyuan/SKILL.md` 顶部加入「调用 API 的硬约束」，`references/api.md` 的 curl 示例整节替换为 Python 示例（curl 仅保留一个只读英文调试样例）。目的：从根上拦截 LLM 默认选 curl 写中文导致乱码的路径。
+
 ### 2026-01-31
 
 - **🚨 中文编码警告**：新增重要提示，禁止使用 curl 直接推送包含中文的内容，会导致乱码问题。必须使用 Python、JavaScript 等编程语言调用 API 确保 UTF-8 编码正确。
@@ -29,6 +34,48 @@ skills/
 ├── siyuan-excalidraw/         # 应用层：图表生成
 └── siyuan-markdown/           # 格式层：Markdown 编辑
 ```
+
+## API 调用约定（所有 skill 共用）
+
+所有思源 API 调用必须通过 `_shared/siyuan_client.py` 提供的 `SiyuanClient`，**不要使用 curl 或手写 `requests.post`**。
+
+### 为什么不能用 curl
+
+shell 转义 + UTF-8 在 `curl -d` 上极易出问题：JSON 内嵌套引号、多行内容、中文字符都会被 shell 重新解释，导致写入思源的内容乱码。`requests.post(..., json=...)` 由库负责 UTF-8 编码，从根上规避。
+
+### 基本用法
+
+```python
+from _shared.siyuan_client import SiyuanClient
+
+client = SiyuanClient.from_config(__file__)  # 自动加载 .claude/siyuan.json
+rows = client.sql("SELECT id FROM blocks WHERE type='d' LIMIT 5")
+client.create_doc_with_md(notebook="20240101...", path="/中文文档", markdown="# 标题\n正文")
+```
+
+### 已封装的端点
+
+`sql` · `insert_block` · `append_block` · `update_block` · `get_block_kramdown` · `set_block_attrs` · `get_block_attrs` · `create_doc_with_md` · `remove_doc` · `get_ids_by_hpath` · `get_path_by_id` · `list_notebooks` · `get_file`
+
+未封装端点用通用方法：
+
+```python
+client.call("/api/notebook/lsNotebooks")
+client.call("/api/block/moveBlock", id="块ID", parentID="新父块ID")
+```
+
+### 错误处理
+
+非 0 `code` 抛 `SiyuanAPIError`（携带 `code` / `msg` / `endpoint`），不要静默忽略。
+
+### 依赖
+
+`requests`（任意版本）。若系统未装：
+
+- Debian/Ubuntu：`sudo apt install python3-requests`
+- 其它：`pip install requests`
+
+---
 
 ## 各 Skill 详解
 

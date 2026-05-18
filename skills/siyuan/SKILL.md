@@ -8,6 +8,21 @@ license: Complete terms in LICENSE.txt
 
 思源笔记是一款基于内容块的隐私优先知识管理工具。本技能提供了思源笔记的核心操作指南，涵盖内容块管理、模板开发、API交互和闪卡系统等功能模块。
 
+## ⚠️ 调用 API 的硬约束（先看这里）
+
+**所有 API 调用必须用 Python，不要用 curl。** 使用 `_shared/siyuan_client.py` 提供的 `SiyuanClient`，常用端点已封装；UTF-8 编码由 `requests` 库保证，中文 / 嵌套引号 / 多行内容写入思源不会乱码。
+
+curl 仅限只读、纯英文端点的临时调试。**禁止用 curl 写入中文或多行内容** —— shell 转义会损坏 JSON，写进思源的内容会乱码。后文为简洁起见仍出现少量 curl 片段，仅作端点形式说明；实际调用请改用 Python。
+
+```python
+from _shared.siyuan_client import SiyuanClient
+
+client = SiyuanClient.from_config(__file__)  # 自动加载 .claude/siyuan.json
+client.create_doc_with_md(notebook="20240101...", path="/我的文档", markdown="# 中文标题\n正文")
+```
+
+完整 API 用法见 [api.md](references/api.md)。
+
 ## 核心概念
 
 - **内容块（Block）**：思源笔记的基本单位，每个块通过全局唯一 ID 标识。ID 由时间戳和 7 位随机字符组成，形如 `202008250000-a1b2c3d`。
