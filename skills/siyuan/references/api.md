@@ -7,7 +7,7 @@
 - **默认服务地址**：`http://127.0.0.1:6806`
 - **请求方法**：所有 API 使用 POST 方法
 - **数据格式**：请求和响应均为 JSON 格式
-- **完整文档**：[GitHub 官方文档](https://github.com/siyuan-note/siyuan)
+- **完整文档**：[API_zh_CN.md（中文）](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md) / [API.md（英文）](https://github.com/siyuan-note/siyuan/blob/master/API.md)
 
 ## 认证
 
@@ -174,5 +174,5 @@ client.call("/api/block/appendBlock", dataType="markdown", data="# 标题", pare
 ## 相关资源
 
 - [思源笔记 GitHub 仓库](https://github.com/siyuan-note/siyuan)
-- [完整 API 文档](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md)
-- [SQL 查询文档](https://github.com/siyuan-note/siyuan/blob/master/SQL_zh_CN.md)
+- [API 文档（中文）](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md)
+- [API 文档（英文）](https://github.com/siyuan-note/siyuan/blob/master/API.md)

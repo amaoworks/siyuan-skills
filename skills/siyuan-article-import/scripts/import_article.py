@@ -41,8 +41,7 @@ class SiYuanImporter:
     def create_notebook(self, name):
         """创建笔记本，返回 ID；失败返回 None。"""
         try:
-            data = self.client.call('/api/notebook/createNotebook', name=name, icon='')
-            return data['notebook']['id'] if data else None
+            return self.client.create_notebook(name) or None
         except SiyuanAPIError as e:
             print(f"ERROR|{e.msg}|")
             return None

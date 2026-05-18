@@ -366,18 +366,13 @@ python scripts/insert_image.py "技术文档" "https://example.com/architecture.
 ## 代码示例
 
 ```python
-# 思源笔记 API 示例
-import requests
+# 思源笔记 API 示例（统一通过 SiyuanClient）
+from _shared.siyuan_client import SiyuanClient
 
-def create_block(content):
-    url = "http://localhost:6806/api/block/insertBlock"
-    data = {
-        "dataType": "markdown",
-        "data": content,
-        "previousID": ""
-    }
-    response = requests.post(url, json=data)
-    return response.json()
+client = SiyuanClient.from_config(__file__)
+
+def append_block(parent_id, content):
+    return client.append_block(parent_id=parent_id, markdown=content)
 ```
 
 ## 表格示例
@@ -416,6 +411,7 @@ $$
 
 ## 参考
 
-- [思源笔记官方文档](https://b3log.org/siyuan/)
+- [思源笔记官网](https://b3log.org/siyuan/)
 - [思源笔记 GitHub 仓库](https://github.com/siyuan-note/siyuan)
-- [思源笔记 API 文档](https://b3log.org/siyuan/zh-Hans/api/)
+- [思源笔记 API 文档（中文）](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md)
+- [思源笔记 API 文档（英文）](https://github.com/siyuan-note/siyuan/blob/master/API.md)

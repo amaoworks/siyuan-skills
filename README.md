@@ -55,7 +55,7 @@ client.create_doc_with_md(notebook="20240101...", path="/中文文档", markdown
 
 ### 已封装的端点
 
-`sql` · `insert_block` · `append_block` · `update_block` · `get_block_kramdown` · `set_block_attrs` · `get_block_attrs` · `create_doc_with_md` · `remove_doc` · `get_ids_by_hpath` · `get_path_by_id` · `list_notebooks` · `get_file`
+`sql` · `insert_block` · `append_block` · `update_block` · `delete_block` · `move_block` · `get_block_kramdown` · `set_block_attrs` · `get_block_attrs` · `create_doc_with_md` · `remove_doc` · `get_ids_by_hpath` · `get_path_by_id` · `list_notebooks` · `create_notebook` · `get_file`
 
 未封装端点用通用方法：
 
@@ -323,8 +323,23 @@ client.call("/api/block/moveBlock", id="块ID", parentID="新父块ID")
 
 欢迎贡献！请遵循 skill-creator 标准创建新 skills。
 
+## 后续工作（TODO）
+
+以下问题在 2026-05-18 的 API 对齐审查中识别，留作后续完善：
+
+- **鉴权风格统一**：`siyuan_client.py` 与 `skills/_shared/tests/*.py` 当前用 `?token=xxx` URL 参数；官方 `API.md` 规范是 `Authorization: Token xxx` 请求头。两者思源都接受，但 Header 形式避免 token 落进 access log，更安全。
+- **`SiyuanClient` 增补端点**（按需逐步补）：
+  - `/api/block/prependBlock` · `/api/block/getChildBlocks` · `/api/block/foldBlock` · `/api/block/unfoldBlock`
+  - `/api/filetree/renameDoc` · `/api/filetree/renameDocByID` · `/api/filetree/removeDocByID`
+  - `/api/filetree/moveDocs` · `/api/filetree/moveDocsByID`
+  - `/api/notification/pushMsg` · `/api/notification/pushErrMsg`
+- **`insert_block` 暴露 `next_id` 参数**：官方支持 `nextID` / `previousID` / `parentID` 三选一，当前只暴露后两者。
+- **输出协议明确化**：`SUCCESS|...` / `ERROR|...` 这套约定只在 `upload_image.py`、`upload_asset.py`、`insert_image.py` 三个 CLI 脚本里使用；`import_article.py` 已改用元组返回。文档应在使用前明确标注，避免误以为所有调用都该这么写。
+- **`.claude-plugin/plugin.json`、`marketplace.json` 的 `author.url`**：当前指向 `b3log.org/siyuan/`（仍在线但已非主仓库）。建议改为 `https://github.com/siyuan-note/siyuan`。
+
 ## 参考资源
 
 - [思源笔记官网](https://b3log.org/siyuan/)
-- [思源笔记 API 文档](https://b3log.org/siyuan/zh-Hans/api/)
+- [思源笔记 API 文档（英文）](https://github.com/siyuan-note/siyuan/blob/master/API.md)
+- [思源笔记 API 文档（中文）](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md)
 - [Claude Skills 指南](https://github.com/anthropics/skills)

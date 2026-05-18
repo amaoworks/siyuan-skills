@@ -96,6 +96,18 @@ class SiyuanClient:
             id=block_id,
         )
 
+    def delete_block(self, block_id: str) -> Any:
+        return self.call("/api/block/deleteBlock", id=block_id)
+
+    def move_block(self, block_id: str, parent_id: str = "", previous_id: str = "") -> Any:
+        """`previous_id` 与 `parent_id` 至少给一个；两者都给时思源优先用 `previous_id`。"""
+        return self.call(
+            "/api/block/moveBlock",
+            id=block_id,
+            parentID=parent_id,
+            previousID=previous_id,
+        )
+
     def get_block_kramdown(self, block_id: str) -> Any:
         return self.call("/api/block/getBlockKramdown", id=block_id)
 
@@ -133,6 +145,11 @@ class SiyuanClient:
     def list_notebooks(self) -> list:
         data = self.call("/api/notebook/lsNotebooks") or {}
         return data.get("notebooks", []) if isinstance(data, dict) else []
+
+    def create_notebook(self, name: str, icon: str = "") -> str:
+        """创建笔记本，返回新笔记本 ID（端点为 createNotebook，小写 b）。"""
+        data = self.call("/api/notebook/createNotebook", name=name, icon=icon) or {}
+        return data.get("notebook", {}).get("id", "")
 
     # ---------- 文件 ----------
 

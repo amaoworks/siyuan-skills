@@ -98,27 +98,18 @@ else:
 ### 创建笔记本函数
 
 ```python
+from _shared.siyuan_client import SiyuanAPIError, SiyuanClient
+
+client = SiyuanClient.from_config(__file__)
+
 def create_notebook(name):
-    """创建笔记本"""
-    config = load_config()
-    if not config:
-        print('ERROR|配置文件未找到|')
-        return None
-
-    response = requests.post(
-        f"{config['api_url'].rstrip('/')}/api/notebook/createNoteBook?token={config['api_token']}",
-        json={'name': name, 'icon': ''},
-        headers={'Content-Type': 'application/json'},
-        timeout=30
-    )
-
-    result = response.json()
-    if result.get('code') == 0:
-        notebook_id = result['data']['notebook']['id']
-        print(f'SUCCESS|{notebook_id}|笔记本创建成功: {name}')
-        return notebook_id
-    else:
-        print(f"ERROR|{result.get('msg', '创建笔记本失败')}|")
+    """创建笔记本（端点为 createNotebook，小写 b）"""
+    try:
+        nb_id = client.create_notebook(name)
+        print(f'SUCCESS|{nb_id}|笔记本创建成功: {name}')
+        return nb_id
+    except SiyuanAPIError as e:
+        print(f"ERROR|{e.msg}|")
         return None
 ```
 
@@ -126,8 +117,7 @@ def create_notebook(name):
 
 ```python
 def create_or_update_document(notebook_id, title, content):
-    """
-    创建或更新文档
+    """创建或更新文档（基于 SiyuanClient）
 
     Args:
         notebook_id: 笔记本ID（建议使用"知识储备"笔记本）
@@ -136,22 +126,11 @@ def create_or_update_document(notebook_id, title, content):
 
     Returns:
         dict: 包含 root_id 的字典，或 None
-
-    注意：
-    - 网络文章应统一存入"知识储备"笔记本
-    - 使用前应先确认或创建该笔记本
     """
-    config = load_config()
-    if not config:
-        print('ERROR|配置文件未找到|')
-        return None
-
     # 检查文档是否已存在
     existing_id = check_document_exists(notebook_id, title)
     if existing_id:
         print(f'文档已存在: {existing_id}')
-        # 可以选择更新或跳过
-        # 这里选择跳过，返回已存在的文档信息
         return {'root_id': existing_id}
 
     # 处理图片
@@ -162,26 +141,11 @@ def create_or_update_document(notebook_id, title, content):
     safe_title = title.replace('/', '-').replace('\\', '-').replace(':', '：')
     path = f'/{safe_title}'
 
-    response = requests.post(
-        f"{config['api_url'].rstrip('/')}/api/filetree/createDocWithMd?token={config['api_token']}",
-        json={
-            'notebook': notebook_id,
-            'path': path,
-            'markdown': processed_content
-        },
-        headers={'Content-Type': 'application/json'}
-    )
-
-    result = response.json()
-    if result.get('code') == 0:
-        # 正确处理返回值
-        doc_id = result['data']
-        if isinstance(doc_id, str):
-            return {'root_id': doc_id}
-        elif isinstance(doc_id, dict):
-            return doc_id
-    else:
-        print(f"ERROR|{result.get('msg', '创建文档失败')}|")
+    try:
+        doc_id = client.create_doc_with_md(notebook_id, path, processed_content)
+        return {'root_id': doc_id}
+    except SiyuanAPIError as e:
+        print(f"ERROR|{e.msg}|")
         return None
 ```
 

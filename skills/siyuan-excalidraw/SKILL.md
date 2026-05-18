@@ -512,4 +512,5 @@ pip install requests
 - [Excalidraw 官网](https://excalidraw.com/)
 - [SVG 规范](https://www.w3.org/TR/SVG2/)
 - [思源笔记官网](https://b3log.org/siyuan/)
-- [思源笔记 API 文档](https://b3log.org/siyuan/zh-Hans/api/)
+- [思源笔记 API 文档（中文）](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md)
+- [思源笔记 API 文档（英文）](https://github.com/siyuan-note/siyuan/blob/master/API.md)
