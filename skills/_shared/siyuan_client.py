@@ -40,6 +40,7 @@ class SiyuanClient:
         self.api_token = api_token
         self.timeout = timeout
         self._session = requests.Session()
+        self._session.headers["Authorization"] = f"Token {api_token}"
 
     @classmethod
     def from_config(cls, start_path: PathLike) -> "SiyuanClient":
@@ -49,9 +50,9 @@ class SiyuanClient:
     def call(self, endpoint: str, **payload: Any) -> Any:
         """调用任意端点。返回 data 字段；非 0 code 抛 SiyuanAPIError。
 
-        endpoint 形如 "/api/block/insertBlock"。
+        endpoint 形如 "/api/block/insertBlock"。鉴权通过 Authorization 请求头注入（session 级别），不再走 URL ?token=。
         """
-        url = f"{self.api_url}{endpoint}?token={self.api_token}"
+        url = f"{self.api_url}{endpoint}"
         resp = self._session.post(
             url,
             json=payload or {},
@@ -155,7 +156,7 @@ class SiyuanClient:
 
     def get_file(self, path: str) -> bytes:
         """获取 data 目录下文件的原始字节（非 JSON 响应）。"""
-        url = f"{self.api_url}/api/file/getFile?token={self.api_token}"
+        url = f"{self.api_url}/api/file/getFile"
         resp = self._session.post(url, json={"path": path}, timeout=self.timeout)
         resp.raise_for_status()
         return resp.content

@@ -28,13 +28,16 @@ from _shared.siyuan_common import read_config
 
 
 def api_post(api_url: str, api_token: str, endpoint: str, payload: dict) -> dict:
-    """用 urllib 发 JSON POST，模拟 client.call 的行为。"""
-    url = f"{api_url.rstrip('/')}{endpoint}?token={api_token}"
+    """用 urllib 发 JSON POST，模拟 client.call 的行为。鉴权走 Authorization: Token xxx 请求头。"""
+    url = f"{api_url.rstrip('/')}{endpoint}"
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urlreq.Request(
         url,
         data=body,
-        headers={"Content-Type": "application/json; charset=utf-8"},
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": f"Token {api_token}",
+        },
         method="POST",
     )
     with urlreq.urlopen(req, timeout=30) as resp:

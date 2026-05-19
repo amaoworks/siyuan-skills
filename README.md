@@ -6,6 +6,10 @@
 
 ## ⚠️ 重要更新
 
+### 2026-05-19
+
+- **🔐 鉴权改用 Authorization 请求头**：`SiyuanClient` 与 smoke test 不再用 `?token=xxx` URL 参数，统一在 session 级别注入 `Authorization: Token xxx` 请求头。两者思源都接受，但 Header 形式避免 token 落进访问日志。调用方无需改动 —— `from_config` / `__init__` 入参不变。
+
 ### 2026-05-18
 
 - **🔧 统一 API 客户端**：新增 `_shared/siyuan_client.py`，提供 `SiyuanClient` 类封装所有常用端点。所有 skill 调用 API 必须经过它，不再手写 `requests.post` 或 curl。详见下方「API 调用约定」一节。
@@ -327,7 +331,6 @@ client.call("/api/block/moveBlock", id="块ID", parentID="新父块ID")
 
 以下问题在 2026-05-18 的 API 对齐审查中识别，留作后续完善：
 
-- **鉴权风格统一**：`siyuan_client.py` 与 `skills/_shared/tests/*.py` 当前用 `?token=xxx` URL 参数；官方 `API.md` 规范是 `Authorization: Token xxx` 请求头。两者思源都接受，但 Header 形式避免 token 落进 access log，更安全。
 - **`SiyuanClient` 增补端点**（按需逐步补）：
   - `/api/block/prependBlock` · `/api/block/getChildBlocks` · `/api/block/foldBlock` · `/api/block/unfoldBlock`
   - `/api/filetree/renameDoc` · `/api/filetree/renameDocByID` · `/api/filetree/removeDocByID`
